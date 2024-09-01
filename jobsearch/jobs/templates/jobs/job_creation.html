@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create/Update Job</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        textarea {
+            margin-top: 5px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        textarea {
+            resize: vertical;
+        }
+        input[type="submit"] {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+        .create-success {
+            color: green;
+            font-weight: bolder;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class='create-success'>
+            {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <p class="message {{ message.tags }}">{{ message }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        <h1>{% if job %}Update{% else %}Create{% endif %} Job</h1>
+        <form id="jobForm" method="post" action="{% if job %}{% url 'jobs:modify-job' job.id %}{% else %}{% url 'jobs:create-new-job' %}{% endif %}">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <input type="submit" value="{% if job %}Update{% else %}Create{% endif %}">
+        </form>
+    </div>
+    
+</body>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const jobForm = document.getElementById('jobForm');
+    
+        jobForm.addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the default form submission
+    
+            const formData = new FormData(jobForm); // Create a FormData object from the form
+    
+            // Convert FormData to JSON
+            const formDataJson = Object.fromEntries(formData.entries());
+    
+            {% if job %}
+            updateJob();
+            {%else%}
+            createJob();
+            {%endif%}
+
+            function createJob() {
+                fetch('http://localhost:8000/create_new_job/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}' // Include CSRF token for Django
+                    },
+                    body: JSON.stringify(formDataJson)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Success:', data);
+                    window.location.href = '/list_posted_jobs/'; // Redirect to list_jobs page on success
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('There was an error submitting the form.');
+                });
+            }
+
+            function updateJob() {
+                fetch('http://localhost:8000/jobs/{{job.id}}/update/', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}' // Include CSRF token for Django
+                    },
+                    body: JSON.stringify(formDataJson)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Success:', data);
+                    window.location.href = '/list_posted_jobs/'; // Redirect to list_jobs page on success
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('There was an error submitting the form.');
+                });
+            }
+        });
+    });
+    </script>
+    
+</html>

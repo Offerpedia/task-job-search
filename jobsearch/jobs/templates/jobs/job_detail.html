@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Detail</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            font-weight: bolder;
+        }
+        .job-details {
+            margin-bottom: 20px;
+        }
+        .applications {
+            margin-top: 20px;
+        }
+        .application {
+            border-bottom: 1px solid #ddd;
+            padding: 10px 0;
+        }
+        .application:last-child {
+            border-bottom: none;
+        }
+        a {
+            text-decoration: none;
+            color: #4caf50;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .job-listing {
+            border: solid 3px #4e4e4e;
+            border-radius: 10px;
+            padding: 2rem;
+            margin-bottom: 1rem;
+        }
+        .apply-success {
+            color: green;
+            text-align: center;
+        }
+        .heading-c {
+            display: flex;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .heading-c button {
+            height: 50px;
+            width: 100px;
+            padding: .5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class='apply-success'>
+            {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <p class="message {{ message.tags }}">{{ message }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        <div class="heading-c"><h1>Jobs Available</h1><form action='/logout/' method='POST'>{% csrf_token %}<button type='submit'>LogOut</button></form></div>
+        <div id="jobs-container">
+    </div>
+</body>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Function to fetch job listings
+        function fetchJobListings() {
+            fetch('http://localhost:8000/jobs/', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}' // Django CSRF token
+                },
+                credentials: 'same-origin'  // Needed for CSRF protection
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                renderJobListings(data);
+            })
+            .catch(error => {
+                console.error('There has been a problem with your fetch operation:', error);
+            });
+        }
+
+        // Function to render job listings in the template
+        function renderJobListings(jobs) {
+            const jobsContainer = document.getElementById('jobs-container'); // Make sure this div exists in your template
+            jobsContainer.innerHTML = '';  // Clear any existing content
+
+            jobs.forEach(job => {
+                const jobElement = document.createElement('div');
+                jobElement.className = 'job-listing';
+                jobElement.innerHTML = `
+                    <h3>${job.title}</h3>
+                    <p><strong>Experience Needed:</strong> ${job.experience_needed}</p>
+                    <p><strong>Salary:</strong> ${job.salary}</p>
+                    <p><strong>Job Description:</strong> ${job.description}</p>
+                    <p><strong>Last Date for Application:</strong> ${job.last_date}</p>
+                    <form action="/apply_job_page/${job.id}/" method="POST">{% csrf_token %}<button type='submit' class="apply-button" data-job-id="${job.id}">Apply</button></form>
+                `;
+                jobsContainer.appendChild(jobElement);
+            });
+        }
+
+
+        // Call the function to fetch job listings when the page loads
+        fetchJobListings();
+    });
+</script>
+
+
+</html>
